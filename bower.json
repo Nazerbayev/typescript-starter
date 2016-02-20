@@ -1,0 +1,25 @@
+{
+  "name": "typescript-starter",
+  "description": "Scaffolding for Typescript applications with Browserify, Tsify and Watchify",
+  "main": "app.js",
+  "authors": [
+    "William Bettencourt"
+  ],
+  "license": "MIT",
+  "moduleType": [
+    "node"
+  ],
+  "homepage": "",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jquery": "~2.2.0",
+    "bootstrap": "~3.3.6"
+  }
+}
