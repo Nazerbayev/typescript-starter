@@ -1,12 +1,12 @@
 var gulp 		= require('gulp'),
+    del         = require('del'),
 	less 		= require('gulp-less'),
-	replace 	= require('gulp-replace'),
-	rename 		= require('gulp-rename'),
+    watch       = require('gulp-watch'),
+    concat      = require('gulp-concat'),
 	sourceMaps 	= require('gulp-sourcemaps'),
     browserify 	= require('browserify'),
     watchify 	= require('watchify'),
     source 		= require('vinyl-source-stream'),
-    stringify 	= require('stringify'),
     exorcist	= require('exorcist'),
     debowerify	= require('debowerify'),
     uglifyJS	= require('gulp-uglify'),
@@ -14,23 +14,34 @@ var gulp 		= require('gulp'),
     tsify 		= require('tsify');
 
 var config = {
-	application: './src',
-	public: './public',
-    entrypoint: './src/app/app.ts',
-    bundleName: 'application.js'
+    source: {
+        root: './src',
+        static_files: ['./src/app/**/*.html', './src/assets/**/*', './src/fonts/**/*'],
+        entrypoint: './src/app/app.ts',
+        styles: ['./src/**/*.less'],
+    },
+    styles_concatenated_filename: 'main.less',
+	public: {
+        root: './dist',
+        styles: './dist/styles',
+        fonts: './dist/fonts',
+        jsname: 'application.js',
+        sourcemap: 'application.js.map',
+        assets: './dist/assets'
+    }
 };
  opts = {
-	basedir: config.application,
+	basedir: config.source.root,
     cache: {},
     packageCache: {},
     debug: true,
-    entries: config.entrypoint
+    entries: config.source.entrypoint
 };
 
 var b = browserify(opts);
 b = watchify(b, {poll: true});
 b.plugin(tsify)
-	.transform(debowerify),
+	.transform(debowerify)
     .on('update', bundle)
     .on('log', function(data) {
         console.log(data);
@@ -38,11 +49,38 @@ b.plugin(tsify)
 
 function bundle() {
     return b.bundle()
-    	.pipe(exorcist(config.public + '/application.js.map'))
-        .pipe(source(config.bundleName))
-        .pipe(gulp.dest(config.public));
+    	.pipe(exorcist(config.public.sourcemap))
+        .pipe(source(config.public.jsname))
+        .pipe(gulp.dest(config.public.root));
 }
 
 
 gulp.task('compile-js', bundle);
+
+// concat all less files
+var pipes = {
+    compileLESS: function() {
+        //TODO: add sourcemaps
+        return gulp.src(config.source.styles)
+                .pipe(concat(config.styles_concatenated_filename))
+                .pipe(less())
+                .pipe(gulp.dest(config.public.styles));
+    },
+    watchStaticFiles: function() {
+        return gulp.src(config.source.static_files)
+            .pipe(watch(config.source.root, { base: config.source.root }))
+            .pipe(gulp.dest(config.public.root));
+    },
+    copyBowerComponents: function() {
+        return gulp.src(bowerFiles(["**/*.js", "**/*.css"]))
+            .pipe(gulp.dest(config.public.root));
+    },
+    clean: function(){
+        return del(config.public.root);
+    }
+};
+
+gulp.task('watch-static-files', function() {
+    return pipes.watchStaticFiles();
+});
 
